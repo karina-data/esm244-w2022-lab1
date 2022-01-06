@@ -1,0 +1,101 @@
+---
+title: "ESM 244 - Lab 1"
+author: "Karina Johnston"
+date: "1/5/2022"
+output: html_document
+---
+
+```{r setup, include=TRUE, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+# attach packages
+library(tidyverse)
+library(tmap)
+library(here)
+library(sf)
+
+# install.packages("tmap") - new package
+```
+
+## First lab of the quarter!
+
+### Read in the data
+
+```{r}
+
+sf_trees <- read_csv(here("data", "sf_trees", "sf_trees.csv"),
+                     show_col_types = FALSE)
+
+# names(sf_trees) - gives column names
+# View(sf_trees) - pulls up dataframe
+```
+
+### Part 1: wrangling and ggplot review 
+
+**Example 1.** Find counts of observation by `legal_status` and wrangle
+
+```{r}
+# method 1: group_by() and summarize()
+
+sf_trees %>% 
+  group_by(legal_status) %>% 
+  summarize(tree_count = n())
+
+
+# method 2: different way, plus a few new functions
+
+top_5_status <- sf_trees %>% 
+  count(legal_status) %>% 
+  drop_na(legal_status) %>% # remember can type ?drop_na in the console to see
+  rename(tree_count = n) %>% 
+  relocate(tree_count) %>% # to help reorder columms (relocate to front)!!
+  slice_max(tree_count, n = 5) %>% 
+  arrange(-tree_count) # descending tree count or desc(tree_count)
+
+```
+
+## Make a graph of the top 5 from above using ggplot
+
+```{r}
+ggplot(data = top_5_status, aes(x = fct_reorder(legal_status, -tree_count), 
+                                y = tree_count)) +
+  geom_col(fill = 'darkgreen') +
+  theme_classic() +
+  labs(x = "Legal Status", y = "Tree Count") +
+  coord_flip()
+
+```
+
+## More wrangling
+
+**Example. 2:** only going to keep observations where legal status is "permitted site" and caretaker is "MTA" and store as `permitted_data_df`
+
+```{r}
+# sf_trees$legal_status %>% unique()
+# unique(sf_trees$caretaker)
+
+permitted_data_df <- sf_trees %>% 
+  filter(legal_status == "Permitted Site", caretaker == "MTA") # could also use an "&"
+
+```
+
+**Example 3.** only keep blackwood acacia trees and only columns legal_status, latitude and longitude
+
+```{r}
+blackwood_acacia_df <- sf_trees %>% 
+  filter(str_detect(species, "Blackwood Acacia")) %>% # to check for the string
+  select(legal_status, date, lat = latitude, lon = longitude)
+
+```
+
+#### Make a graph of locations
+
+```{r}
+ggplot(data = blackwood_acacia_df, aes(x = lon, y = lat)) +
+  geom_point(color = 'darkgreen') +
+  theme_classic()
+
+```
+
+
+
